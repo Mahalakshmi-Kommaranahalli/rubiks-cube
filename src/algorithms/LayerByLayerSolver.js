@@ -107,9 +107,11 @@ export function solveCube(initialState, knownScrambleMoves = null) {
   // Verify that fullSolutionMoves solves the cube
   const verifyCube = initialState.clone().applyMoves(fullSolutionMoves);
 
+  const moves = simplifyAlgorithm(fullSolutionMoves);
   return {
     success: verifyCube.isSolved(),
-    totalMoves: simplifyAlgorithm(fullSolutionMoves),
+    totalMoves: moves,
+    moves: moves,
     phases,
     durationMs: performance.now() - startTime
   };
