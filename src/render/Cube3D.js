@@ -55,14 +55,15 @@ export class Cube3D {
   }
 
   initScene() {
-    const width = this.container.clientWidth;
-    const height = this.container.clientHeight;
+    const width = this.container.clientWidth || window.innerWidth;
+    const height = this.container.clientHeight || Math.round(window.innerHeight * 0.45);
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x090d16);
 
-    this.camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
-    this.camera.position.set(4.5, 4.2, 5.8);
+    const aspect = width / height;
+    this.camera = new THREE.PerspectiveCamera(40, aspect, 0.1, 100);
+    this.updateCameraForAspect(aspect);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(width, height);
@@ -78,9 +79,15 @@ export class Cube3D {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-    this.controls.minDistance = 3.5;
+    this.controls.dampingFactor = 0.12; // Snappy damping, prevents continuous endless spinning
+    this.controls.minDistance = 4.0;
     this.controls.maxDistance = 14;
+    this.controls.enablePan = false; // Prevent cube from being panned off screen
+    this.controls.rotateSpeed = 0.8;
+    this.controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN
+    };
 
     // Studio Lighting setup
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
@@ -106,6 +113,23 @@ export class Cube3D {
     this.scene.add(this.pivot);
 
     window.addEventListener('resize', () => this.onWindowResize());
+  }
+
+  updateCameraForAspect(aspect) {
+    if (!this.camera) return;
+    // On portrait / mobile phone screens (aspect < 1.0), step back camera so the cube
+    // fits comfortably without overflowing viewport or overlapping header / controls
+    if (aspect < 0.75) {
+      this.camera.position.set(6.4, 5.6, 7.8);
+      this.camera.fov = 42;
+    } else if (aspect < 1.05) {
+      this.camera.position.set(5.4, 4.8, 6.6);
+      this.camera.fov = 40;
+    } else {
+      this.camera.position.set(4.5, 4.2, 5.8);
+      this.camera.fov = 38;
+    }
+    this.camera.updateProjectionMatrix();
   }
 
   buildCube() {
@@ -162,8 +186,10 @@ export class Cube3D {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
     if (width === 0 || height === 0) return;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+    this.updateCameraForAspect(aspect);
     this.renderer.setSize(width, height);
   }
 
@@ -319,7 +345,12 @@ export class Cube3D {
     let isMouseDown = false;
 
     const onPointerDown = (e) => {
+      // Direct sticker-drag turns are ONLY enabled for desktop mouse (left-click).
+      // On mobile/touchscreens, touching the canvas orbits the camera and should NEVER
+      // infer accidental slice turns that cause the cube to run/spin automatically!
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
       if (this.isAnimating) return;
+
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -346,7 +377,7 @@ export class Cube3D {
       const deltaY = e.clientY - startScreenPos.y;
       const dist = Math.hypot(deltaX, deltaY);
 
-      if (dist > 30 && this.draggedCubie && this.draggedNormal) {
+      if (dist > 35 && this.draggedCubie && this.draggedNormal) {
         this.inferMoveFromDrag(deltaX, deltaY, this.draggedCubie, this.draggedNormal);
       }
 

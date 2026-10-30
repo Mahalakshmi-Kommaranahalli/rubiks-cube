@@ -701,8 +701,18 @@ header {
 /* Mobile Phones & Portrait Tablets (<= 768px) */
 @media (max-width: 768px) {
   header {
-    height: 54px;
-    padding: 0 0.85rem;
+    height: 50px;
+    padding: 0 0.65rem;
+  }
+
+  .brand {
+    gap: 0.45rem;
+  }
+
+  .brand-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
   }
 
   .brand-subtitle {
@@ -710,115 +720,186 @@ header {
   }
 
   .brand-title {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
 
   .header-actions {
-    gap: 0.4rem;
+    gap: 0.3rem;
   }
 
   #state-badge {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.68rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.65rem;
+  }
+
+  #btn-theory-modal {
+    padding: 0.25rem 0.5rem;
   }
 
   #btn-theory-modal span {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
+  }
+
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 0.85rem;
   }
 
   .main-layout {
     display: flex;
     flex-direction: column;
     height: auto;
-    min-height: calc(100vh - 54px);
+    min-height: calc(100vh - 50px);
     overflow-y: auto;
     overflow-x: hidden;
   }
 
-  /* 3D Viewport on Mobile: Dedicated top section */
+  /* 3D Viewport on Mobile: Clean natural document flow, NO overlapping layers */
   .viewport-panel {
-    width: 100%;
-    height: 52vh;
-    min-height: 380px;
-    max-height: 520px;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .canvas-3d-container {
-    height: 100%;
-    min-height: 240px;
-  }
-
-  /* Compact Mobile HUD Overlays */
-  .hud-top {
-    top: 0.4rem;
-    left: 0.4rem;
-    right: 0.4rem;
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 0.4rem;
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    border-right: none;
+    border-bottom: 2px solid var(--border);
+    position: relative;
+    overflow: visible;
+    background: #080c14;
+  }
+
+  /* HUD Top: Docked above the 3D canvas instead of floating over the cube */
+  .hud-top {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    padding: 0.45rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background: rgba(12, 18, 30, 0.95);
+    border-bottom: 1px solid var(--border);
+    z-index: 5;
+    pointer-events: auto;
   }
 
   .hud-card {
-    padding: 0.35rem 0.65rem;
+    padding: 0.35rem 0.5rem;
     border-radius: 8px;
     width: 100%;
+    box-shadow: none;
   }
 
   .telemetry-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
     gap: 0.5rem;
-    justify-content: space-between;
+  }
+
+  .stat-item {
+    align-items: center;
+    text-align: center;
   }
 
   .stat-label {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.02em;
   }
 
   .stat-value {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
   }
 
   .hud-actions {
     width: 100%;
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 0.35rem;
   }
 
-  .hud-actions .btn,
-  .hud-actions div {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.5rem;
+  .hud-actions > div {
+    flex: 1;
+    min-width: 0;
   }
 
-  /* Mobile Move Buttons Ribbon */
+  .hud-actions label {
+    display: none; /* Hide label on mobile to save space */
+  }
+
+  .hud-actions select {
+    width: 100%;
+    font-size: 0.72rem !important;
+  }
+
+  .hud-actions .btn {
+    font-size: 0.74rem;
+    padding: 0.35rem 0.55rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Dedicated 3D Canvas Area: 100% unobstructed view of the Rubik's cube */
+  .canvas-3d-container {
+    height: 290px;
+    min-height: 260px;
+    max-height: 320px;
+    width: 100%;
+    position: relative;
+    touch-action: none;
+    background: radial-gradient(circle at 50% 50%, #0d1527 0%, #080c14 100%);
+    margin: 0;
+  }
+
+  /* Bottom Move Ribbon: Clean 6-column grid below the canvas */
   .viewport-bottom-bar {
-    padding: 0.4rem 0.5rem;
+    padding: 0.5rem 0.6rem;
     gap: 0.35rem;
+    background: rgba(10, 15, 26, 0.98);
+    border-top: 1px solid var(--border);
+    position: relative;
+    z-index: 5;
   }
 
   .move-buttons-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.25rem;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.3rem;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
   }
 
   .btn-move {
-    min-width: 34px;
+    min-width: 0;
+    width: 100%;
     height: 32px;
-    padding: 0.2rem 0.4rem;
-    font-size: 0.75rem;
+    padding: 0;
+    font-size: 0.76rem;
+    font-weight: 700;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
+  /* Subtle face color hints on buttons */
+  .btn-move[data-move^="U"] { border-top: 2px solid #ffffff; }
+  .btn-move[data-move^="D"] { border-top: 2px solid #ffd500; }
+  .btn-move[data-move^="L"] { border-top: 2px solid #ff5800; }
+  .btn-move[data-move^="R"] { border-top: 2px solid #b71234; }
+  .btn-move[data-move^="F"] { border-top: 2px solid #009b48; }
+  .btn-move[data-move^="B"] { border-top: 2px solid #0046ad; }
+
   .controls-hint {
-    font-size: 0.65rem;
+    font-size: 0.64rem;
     line-height: 1.3;
+    text-align: center;
+    color: var(--text-dim);
   }
 
   /* Sidebar Dashboard below 3D canvas */
@@ -878,30 +959,44 @@ header {
 /* Extra Small Mobile Devices (<= 400px) */
 @media (max-width: 400px) {
   header {
-    padding: 0 0.5rem;
+    padding: 0 0.45rem;
   }
 
   .brand-title {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  #state-badge {
+    padding: 0.15rem 0.35rem;
+  }
+
+  #state-text {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   #btn-theory-modal {
-    padding: 0.25rem 0.45rem;
+    padding: 0.2rem 0.4rem;
   }
 
   #btn-theory-modal span {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
+  }
+
+  .canvas-3d-container {
+    height: 260px;
+    min-height: 240px;
   }
 
   .btn-move {
-    min-width: 30px;
     height: 30px;
     font-size: 0.7rem;
-    padding: 0.15rem 0.3rem;
   }
 
-  .viewport-panel {
-    height: 48vh;
-    min-height: 340px;
+  .hud-actions .btn {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.7rem;
   }
 }
