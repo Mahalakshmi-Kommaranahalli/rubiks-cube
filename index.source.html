@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rubik's Cube // Computational State-Space Problem & Path-Finding Engine</title>
+  <meta name="description" content="Treating the Rubik's Cube as a computational state-space search problem. Interactive 3D Rubik's Cube game with BFS, IDA*, and hierarchical Layer-by-Layer solvers, live state-space tree graph visualization, and group theory analytics." />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><rect x='2' y='2' width='9' height='9' rx='1'/><rect x='13' y='2' width='9' height='9' rx='1'/><rect x='2' y='13' width='9' height='9' rx='1'/><rect x='13' y='13' width='9' height='9' rx='1'/></svg>" />
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">3³</div>
+      <div>
+        <span class="brand-title">RUBIK'S CUBE</span>
+        <span class="brand-subtitle">COMPUTATIONAL STATE-SPACE ENGINE</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div id="state-badge" class="badge badge-solved">
+        <span class="badge-dot">●</span>
+        <span id="state-text">STATE: SOLVED</span>
+      </div>
+
+      <button id="btn-theory-modal" class="btn" title="View Group Theory & State-Space Mathematics">
+        <span>Theory & Group Math</span>
+      </button>
+
+      <button id="btn-sound-toggle" class="btn-icon" title="Toggle Sound Feedback">
+        <span id="sound-icon">🔊</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Dashboard -->
+  <main class="main-layout">
+    <!-- Left: 3D WebGL Viewport -->
+    <section class="viewport-panel">
+      <!-- Top HUD -->
+      <div class="hud-top">
+        <div class="hud-card telemetry-row">
+          <div class="stat-item">
+            <span class="stat-label">Solved Integrity</span>
+            <span id="hud-percent-solved" class="stat-value">100%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Heuristic h(n)</span>
+            <span id="hud-heuristic" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Misplaced Facelets</span>
+            <span id="hud-misplaced" class="stat-value">0 / 48</span>
+          </div>
+        </div>
+
+        <div class="hud-actions">
+          <div style="display: flex; align-items: center; gap: 0.35rem; background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: 8px; border: 1px solid var(--border);">
+            <label for="scramble-length-select" style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">Scramble Moves:</label>
+            <select id="scramble-length-select" style="background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.4rem; font-family: var(--font-mono); font-size: 0.75rem;">
+              <option value="3">3 (BFS Optimal Demo)</option>
+              <option value="5" selected>5 (Graph Search)</option>
+              <option value="10">10 (Intermediate)</option>
+              <option value="20">20 (Standard WCA)</option>
+            </select>
+          </div>
+          <button id="btn-scramble" class="btn btn-primary">
+            <span>🎲 Scramble</span>
+          </button>
+          <button id="btn-reset" class="btn">
+            <span>↺ Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D Canvas Mount Point -->
+      <div id="cube3d-mount" class="canvas-3d-container"></div>
+
+      <!-- Bottom Move Toolbar -->
+      <div class="viewport-bottom-bar">
+        <div class="move-buttons-group">
+          <button class="btn-move" data-move="U">U</button>
+          <button class="btn-move" data-move="U'">U'</button>
+          <button class="btn-move" data-move="U2">U2</button>
+          <button class="btn-move" data-move="D">D</button>
+          <button class="btn-move" data-move="D'">D'</button>
+          <button class="btn-move" data-move="D2">D2</button>
+          <button class="btn-move" data-move="L">L</button>
+          <button class="btn-move" data-move="L'">L'</button>
+          <button class="btn-move" data-move="L2">L2</button>
+          <button class="btn-move" data-move="R">R</button>
+          <button class="btn-move" data-move="R'">R'</button>
+          <button class="btn-move" data-move="R2">R2</button>
+          <button class="btn-move" data-move="F">F</button>
+          <button class="btn-move" data-move="F'">F'</button>
+          <button class="btn-move" data-move="F2">F2</button>
+          <button class="btn-move" data-move="B">B</button>
+          <button class="btn-move" data-move="B'">B'</button>
+          <button class="btn-move" data-move="B2">B2</button>
+        </div>
+        <div class="controls-hint">
+          <span>Click buttons or drag stickers in 3D • Keyboard: <b>U, D, L, R, F, B</b> (+Shift for inverse, 2 for double) • Orbit: Left drag to rotate scene view</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Computational State-Space & Solver Dashboard -->
+    <aside class="sidebar-panel">
+      <!-- Tabs Header -->
+      <nav class="tabs-nav">
+        <button class="tab-btn active" data-tab="tab-solver">Path-Finding & Graph</button>
+        <button class="tab-btn" data-tab="tab-analytics">State Analytics</button>
+        <button class="tab-btn" data-tab="tab-history">Move Log</button>
+      </nav>
+
+      <div class="tab-content">
+        <!-- TAB 1: SOLVER & GRAPH -->
+        <div id="tab-solver" class="tab-pane active">
+          <!-- Algorithm Selection Card -->
+          <div class="panel-card">
+            <div class="card-title">
+              <span>State-Space Algorithm</span>
+              <span id="algo-metric-badge" class="badge badge-solved" style="font-size: 0.68rem;">Shortest Path</span>
+            </div>
+            <div class="algo-options">
+              <label class="algo-option-label selected">
+                <input type="radio" name="solver-algo" value="bfs" checked style="display:none;" />
+                <div class="algo-meta">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="algo-name">Breadth-First Search (BFS)</span>
+                    <span class="algo-tag">O(b^d) Optimal</span>
+                  </div>
+                  <span class="algo-desc">Exhaustive level-by-level exploration of state tree G=(V,E). Guaranteed shortest path for shallow scrambles.</span>
+                </div>
+              </label>
+
+              <label class="algo-option-label">
+                <input type="radio" name="solver-algo" value="ida" style="display:none;" />
+                <div class="algo-meta">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="algo-name">IDA* Search (Admissible Heuristic)</span>
+                    <span class="algo-tag">f(n) = g(n) + h(n)</span>
+                  </div>
+                  <span class="algo-desc">Iterative Deepening A* with pattern heuristic to prune exponential state branches using O(d) memory.</span>
+                </div>
+              </label>
+
+              <label class="algo-option-label">
+                <input type="radio" name="solver-algo" value="lbl" style="display:none;" />
+                <div class="algo-meta">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="algo-name">Hierarchical Decomposition (CFOP)</span>
+                    <span class="algo-tag">Guaranteed 100%</span>
+                  </div>
+                  <span class="algo-desc">Decomposes the 4.33×10¹⁹ state-space into 7 sub-goal manifolds. Solves any scramble of arbitrary depth in milliseconds.</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Parameters -->
+            <div id="search-params" class="param-row">
+              <div class="param-header">
+                <span style="color:var(--text-dim)">Search Depth Limit (d)</span>
+                <span id="depth-limit-val" style="color:var(--primary)">5 moves</span>
+              </div>
+              <input type="range" id="depth-limit-slider" class="param-slider" min="2" max="10" value="5" />
+            </div>
+
+            <button id="btn-find-path" class="btn btn-emerald" style="width: 100%; justify-content: center; padding: 0.75rem;">
+              <span>⚡ Find Solution Path</span>
+            </button>
+          </div>
+
+          <!-- Live State-Space Telemetry -->
+          <div class="panel-card">
+            <div class="card-title">
+              <span>Search Telemetry</span>
+              <span id="search-status-text" style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">IDLE</span>
+            </div>
+            <div class="telemetry-grid">
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">States Explored</div>
+                <div id="metric-explored" class="telemetry-cell-val">0</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">Execution Time</div>
+                <div id="metric-time" class="telemetry-cell-val">0 ms</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">Solution Length</div>
+                <div id="metric-path-length" class="telemetry-cell-val">-</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">Frontier Queue</div>
+                <div id="metric-frontier" class="telemetry-cell-val">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- State-Space Search Tree Visualization -->
+          <div class="panel-card">
+            <div class="card-title">
+              <span>State-Space Search Tree G=(V, E)</span>
+              <span style="font-size: 0.7rem; color: var(--text-dim); font-family: var(--font-mono);">Scroll to zoom • Drag to pan</span>
+            </div>
+            <div id="tree-canvas-container" class="tree-container"></div>
+          </div>
+
+          <!-- Solution Timeline & Playback Controller -->
+          <div id="solution-section" class="panel-card" style="display: none;">
+            <div class="card-title">
+              <span>Solution Trajectory</span>
+              <span id="solution-move-count" style="font-size: 0.75rem; color: var(--primary); font-family: var(--font-mono);">0 Moves</span>
+            </div>
+            
+            <div id="solution-tape" class="moves-tape"></div>
+
+            <div class="playback-controls">
+              <button id="btn-play-start" class="btn-icon" title="Reset to start of solution">|◀</button>
+              <button id="btn-play-prev" class="btn-icon" title="Step backward">◀</button>
+              <button id="btn-playback-toggle" class="btn btn-primary" style="padding: 0.4rem 1rem;">
+                <span id="play-pause-icon">▶ Play Path</span>
+              </button>
+              <button id="btn-play-next" class="btn-icon" title="Step forward">▶</button>
+              <button id="btn-play-end" class="btn-icon" title="Jump to solved state">▶|</button>
+            </div>
+
+            <div class="param-row" style="margin-top: 0.25rem;">
+              <div class="param-header">
+                <span style="color:var(--text-dim)">Playback Animation Speed</span>
+                <span id="speed-label" style="color:var(--primary)">250 ms / turn</span>
+              </div>
+              <input type="range" id="speed-slider" class="param-slider" min="80" max="600" value="250" />
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: STATE ANALYTICS -->
+        <div id="tab-analytics" class="tab-pane">
+          <div class="panel-card">
+            <div class="card-title">
+              <span>Formal State Representation</span>
+            </div>
+            <div class="param-row">
+              <span class="stat-label">Current State Fingerprint (Hash)</span>
+              <div id="state-hash-display" class="math-formula" style="word-break: break-all; font-size: 0.72rem;">-</div>
+            </div>
+            <div class="param-row">
+              <span class="stat-label">Facelet Net 54-Tuple S = (f0..f53)</span>
+              <div id="state-facelet-string" class="math-formula" style="word-break: break-all; font-size: 0.72rem;">-</div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="card-title">
+              <span>Group Invariants & Parity Checks</span>
+            </div>
+            <div class="telemetry-grid">
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">Corner Orientations</div>
+                <div id="parity-corners" class="telemetry-cell-val" style="font-size: 0.95rem; color: var(--emerald);">Σx_c ≡ 0 (mod 3)</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">Edge Orientations</div>
+                <div id="parity-edges" class="telemetry-cell-val" style="font-size: 0.95rem; color: var(--emerald);">Σx_e ≡ 0 (mod 2)</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">Corner Permutation</div>
+                <div id="corner-count-stat" class="telemetry-cell-val">8 / 8 Solved</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="telemetry-cell-label">Edge Permutation</div>
+                <div id="edge-count-stat" class="telemetry-cell-val">12 / 12 Solved</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: MOVE LOG -->
+        <div id="tab-history" class="tab-pane">
+          <div class="panel-card">
+            <div class="card-title">
+              <span>Chronological Move History</span>
+              <button id="btn-clear-history" class="btn" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;">Clear</button>
+            </div>
+            <div id="history-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.8rem;">
+              <span style="color: var(--text-dim); text-align: center; padding: 1rem;">No moves recorded yet.</span>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="card-title">
+              <span>Export Algorithm</span>
+            </div>
+            <textarea id="algorithm-export-text" readonly style="background: var(--bg-deep); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; font-family: var(--font-mono); font-size: 0.8rem; resize: none; height: 80px;" placeholder="Move sequence in Singmaster notation..."></textarea>
+            <button id="btn-copy-algo" class="btn" style="justify-content: center;">
+              <span>Copy Singmaster Algorithm</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Educational Theory & Mathematics Modal Dialog -->
+  <div id="theory-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Rubik's Cube as a Computational State-Space Problem</h3>
+        <button id="btn-close-modal" class="btn-icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>
+          In classical artificial intelligence and combinatorial optimization, the Rubik's Cube is one of the benchmark <b>State-Space Search Problems</b>.
+        </p>
+
+        <h4 style="color:var(--primary); margin-top: 0.5rem;">1. Group Theoretic State Space Formulation</h4>
+        <p>
+          Mathematically, every cube configuration is an element of the permutation group:
+        </p>
+        <div class="math-formula">
+          G = ⟨U, D, L, R, F, B⟩ ≤ S₄₈
+        </div>
+        <p>
+          The total number of physically reachable distinct states is:
+        </p>
+        <div class="math-formula">
+          |G| = (8! × 3⁷ × 12! × 2¹¹)/2 = 43,252,003,274,489,856,000 ≈ 4.33 × 10¹⁹ states
+        </div>
+
+        <h4 style="color:var(--primary); margin-top: 0.5rem;">2. God's Number & Search Complexity</h4>
+        <p>
+          In 2010, mathematicians and computer scientists proved that <b>God's Number is 20</b> in the Half-Turn Metric (HTM). This means that every single state in the 43 quintillion state space can be solved in at most 20 moves.
+        </p>
+        <p>
+          However, because the branching factor is <b>b ≈ 18</b> (or 15 without immediate inverses), an exhaustive Breadth-First Search (BFS) to depth 20 would require checking:
+        </p>
+        <div class="math-formula">
+          b^d ≈ 18²⁰ ≈ 1.27 × 10²⁵ nodes
+        </div>
+        <p>
+          This exponential explosion makes brute-force search impossible for deep scrambles without heuristic pruning (A*, IDA*) or hierarchical sub-goal reduction (CFOP / Kociemba 2-phase).
+        </p>
+
+        <h4 style="color:var(--primary); margin-top: 0.5rem;">3. Algorithms Implemented in this Project</h4>
+        <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <li><b>BFS (Breadth-First Search):</b> Explores all states level-by-level to demonstrate the exponential frontier expansion and finds the mathematically optimal shortest path.</li>
+          <li><b>IDA* (Iterative Deepening A*):</b> Evaluates paths using <code>f(n) = g(n) + h(n)</code> with an admissible heuristic based on misplaced cubies and orientation invariants.</li>
+          <li><b>Hierarchical CFOP Solver:</b> Decomposes the search into 7 sequential sub-goals: White Cross → First Layer Corners → Middle Layer Edges → OLL Yellow Cross → OLL Yellow Corners → PLL Corners → PLL Edges. Solves any scramble in milliseconds!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -5,8 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite index.source.html",
+    "build": "vite build && node copy_build.js",
     "preview": "vite preview"
   },
   "dependencies": {
